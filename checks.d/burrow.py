@@ -10,9 +10,9 @@ from checks import AgentCheck
 
 SERVICE_CHECK_NAME = 'burrow.can_connect'
 
-DEFAULT_BURROW_URI = 'http://localhost:8000'
+DEFAULT_BURROW_URI = 'http://192.168.77.191:8000'
 
-CLUSTER_ENDPOINT = '/v2/kafka'
+CLUSTER_ENDPOINT = '/v3/kafka'
 
 CHECK_TIMEOUT = 10
 
@@ -113,7 +113,7 @@ class BurrowCheck(AgentCheck):
         """
         for cluster in clusters:
             cluster_path = "%s/%s" % (CLUSTER_ENDPOINT, cluster)
-            offsets_topic = self._rest_request_to_json(burrow_address, cluster_path)["cluster"]["offsets_topic"]
+            offsets_topic = "__consumer_offsets"
             topics_path = "%s/topic" % cluster_path
             topics_list = self._rest_request_to_json(burrow_address, topics_path).get("topics", [])
             for topic in topics_list:
@@ -129,13 +129,14 @@ class BurrowCheck(AgentCheck):
         Retrieve the offsets for all consumer groups in the clusters
         """
         for cluster in clusters:
-            consumers_path = "%s/%s/consumer" % (CLUSTER_ENDPOINT, cluster)
+            cluster_path = "%s/%s" % (CLUSTER_ENDPOINT, cluster)
+            consumers_path = "%s/consumer" % cluster_path
             consumers_list = self._rest_request_to_json(burrow_address, consumers_path).get("consumers", [])
             for consumer in consumers_list:
-                topics_path = "%s/%s/topic" % (consumers_path, consumer)
+                topics_path = "%s/%s" % (consumers_path, consumer)
                 topics_list = self._rest_request_to_json(burrow_address, topics_path).get("topics", [])
                 for topic in topics_list:
-                    topic_path = "%s/%s" % (topics_path, topic)
+                    topic_path = "%s/topic/%s" % (cluster_path, topic)
                     response = self._rest_request_to_json(burrow_address, topic_path)
                     if not response:
                         continue
